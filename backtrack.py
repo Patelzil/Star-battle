@@ -3,9 +3,10 @@ class CSP:
         self.variables = variables  # variables to be constrained
         self.domains = domains  # domain of each variable
         self.constraints = {}
+        self.count = 0
 
     def consistent(self, var, assignment):
-        pass
+        return True
 
     def select_variable(self,assignment,heuristic):
         if heuristic == "most_constrained":
@@ -16,7 +17,9 @@ class CSP:
             return self.hybrid(assignment)
 
     def most_constrained(self,assignment):
-        pass
+        var = self.variables[self.count]
+        self.count += 1
+        return var
 
     def most_constraining(self,assignment):
         pass
@@ -40,7 +43,7 @@ class CSP:
                     result = self.backtracking(assignment, heuristic)
 
                     if result is not None:
-                        result = assignment
+                        return assignment
 
                     else:
                         assignment.pop(variable)
@@ -48,3 +51,31 @@ class CSP:
             return None
 
         return result
+
+# Returns a list of variables, and domains.
+def read_file():
+    file = open("input")
+    lines = file.readlines()
+    # List of variables.
+    variables = [x+1 for x in range(len(lines)*2)]
+    # Dictionary of domains
+    domains = {}
+    # Keeping track of Variables
+    count = 0
+    for line in lines:
+        str_values = line.split("\\t")[1].rstrip().split(",")
+        domain = []
+        for value in str_values:
+            domain.append(int(value))
+        domains[variables[count]] = domain
+        domains[variables[count+1]] = domain
+        count += 2
+
+    return variables, domains
+
+def main():
+    variables, domains = read_file()
+    csp = CSP(variables,domains)
+    resyi = csp.backtracking({}, "most_constrained")
+    print(resyi)
+main()
