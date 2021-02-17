@@ -184,16 +184,21 @@ class CSP:
     # print the output of the solution
     #
     # assignment - dictionary containing the final solution to a puzzle
+    # returns a string with the appropriate output
     def print_output(self, assignment):
         output = ""
-        for num in range(1, self.size*self.size+1):
-            if (num % self.size) == 1:
-                output += "\n|"
-            if num in assignment.values():
-                output += "X|"
-            else:
-                output += ".|"
-        return output
+        # check for no solution
+        if assignment is None:
+            output = "No solution"
+        else:
+            for num in range(1, self.size*self.size+1):
+                if (num % self.size) == 1:
+                    output += "\n|"
+                if num in assignment.values():
+                    output += "X|"
+                else:
+                    output += ".|"
+        print(output)
 
 
 # Returns a list of variables, and domains.
@@ -223,7 +228,6 @@ def main():
     variables, domains, size = read_file()
     csp = CSP(variables, domains, size)
     resyi = csp.backtracking({}, "most_constrained")
-    print(resyi)
-    # print(csp.print_output({1: 1, 2: 3, 3: 100}))
+    csp.print_output(resyi)
 
 main()
