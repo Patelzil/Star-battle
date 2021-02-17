@@ -1,5 +1,6 @@
 import copy
 
+
 class CSP:
     def __init__(self, variables, domains, size):
         self.variables = variables  # variables to be constrained
@@ -22,22 +23,25 @@ class CSP:
             if (assignment[key] == value - self.size) or (value - self.size <= 0):
                 return False
             # check top left cell
-            if (assignment[key] == value - self.size - 1) or (value - self.size <= 0):
+            if (assignment[key] == value - self.size - 1) or (value - self.size - 1 <= 0) and (
+                    value - 1 % self.size != 0):
                 return False
             # check top right cell
-            if (assignment[key] == value - self.size + 1) or (value - self.size <= 0):
+            if (assignment[key] == value - self.size + 1) or (value - self.size + 1 <= 0) and (
+                    value + 1 % self.size != 1):
                 return False
 
             # check bottom cell
             if (assignment[key] == value + self.size) or (value + self.size > self.size * self.size):
                 return False
             # check bottom left
-            if (assignment[key] == value + self.size - 1) or (value + self.size > self.size * self.size):
+            if (assignment[key] == value + self.size - 1) or (value + self.size > self.size * self.size) and (
+                    value - 1 % self.size != 0):
                 return False
             # check bottom right
-            if (assignment[key] == value + self.size + 1) or (value + self.size > self.size * self.size):
+            if (assignment[key] == value + self.size + 1) or (value + self.size > self.size * self.size) and (
+                    value + 1 % self.size != 1):
                 return False
-
 
         return True
 
@@ -98,22 +102,53 @@ class CSP:
         most_constrained = -1
 
         reduced_domains = copy.deepcopy(self.domains)
-
+        # for every variable not in assigment. Take each assigned value and remove value from domain
         for var in self.variables:
             if var not in assignment:
                 for key in assignment:
                     assigned_value = assignment[key]  # variable
                     if assigned_value in reduced_domains[var]:
                         reduced_domains[var].remove(assigned_value)
+                    # checking if assigned values are not neighbours to domain
+                    # check and remove right
+                    if (assigned_value + 1) % self.size != 1 and assigned_value + 1 in reduced_domains[var]:
+                        reduced_domains[var].remove(assigned_value + 1)
+                    # check and remove left
+                    if (assigned_value - 1) % self.size != 0 and assigned_value - 1 in reduced_domains[var]:
+                        reduced_domains[var].remove(assigned_value - 1)
+                    # check and remove down
+                    if (assigned_value + self.size) <= self.size * self.size and assigned_value + self.size in \
+                            reduced_domains[var]:
+                        reduced_domains[var].remove(assigned_value + self.size)
+                    # check and remove top
+                    if (assigned_value - self.size) > 0 and assigned_value - self.size in reduced_domains[var]:
+                        reduced_domains[var].remove(assigned_value - self.size)
+                    # check and remove top left
+                    if (assigned_value - self.size - 1) % self.size != 0 and assigned_value - self.size - 1 in \
+                            reduced_domains[var]:
+                        reduced_domains[var].remove(assigned_value - self.size - 1)
+                    # check and remove top right
+                    if (assigned_value - self.size + 1) % self.size != 1 and assigned_value - self.size + 1 in \
+                            reduced_domains[var]:
+                        reduced_domains[var].remove(assigned_value - self.size + 1)
+                    # check and remove bottom left
+                    if (assigned_value + self.size - 1) % self.size != 0 and assigned_value + self.size - 1 in \
+                            reduced_domains[var]:
+                        reduced_domains[var].remove(assigned_value + self.size - 1)
+                    # check and remove bottom right
+                    if (assigned_value + self.size + 1) % self.size != 1 and assigned_value + self.size + 1 in \
+                            reduced_domains[var]:
+                        reduced_domains[var].remove(assigned_value + self.size + 1)
 
         for key in reduced_domains:
             if key not in assignment:
                 if len(reduced_domains[key]) < count:
                     count = len(reduced_domains[key])
                     most_constrained = key
-
-
-        return most_constrained
+        # print("most_constrained")
+        # print(reduced_domains)
+        # print("most_constrained")
+        return most_constrained, reduced_domains
 
     def most_constraining(self, assignment):
         pass
@@ -122,31 +157,43 @@ class CSP:
         pass
 
     def backtracking(self, assignment, heuristic):
+        # print(assignment)
         result = {}
         # base case
         if len(assignment) == len(self.variables):
-            result = assignment
+            return assignment
         else:
             # assignment is a dict
             # domain is a dict
-            variable = self.select_variable(assignment, heuristic)
+            variable, reduced_domains = self.select_variable(assignment, heuristic)
             # d[v] //edit so FC
-            if variable == -1:
-                return assignment
 
-            for value in self.domains[variable]:
+            for value in reduced_domains[variable]:
                 if self.consistent(value, variable, assignment):
                     assignment[variable] = value
+
                     result = self.backtracking(assignment, heuristic)
 
                     if result is not None:
-                        return assignment
-                    else:
-                        assignment.pop(variable)
+                        return assignment  # final assignmnet.
 
-            return assignment
+                    assignment.pop(variable)
+            return None
 
-        return result
+    # print_output(assignment)
+    # print the output of the solution
+    #
+    # assignment - dictionary containing the final solution to a puzzle
+    def print_output(self, assignment):
+        output = ""
+        for num in range(1, self.size*self.size+1):
+            if (num % self.size) == 1:
+                output += "\n|"
+            if num in assignment.values():
+                output += "X|"
+            else:
+                output += ".|"
+        return output
 
 
 # Returns a list of variables, and domains.
@@ -167,6 +214,7 @@ def read_file():
         domains[variables[count]] = domain
         domains[variables[count + 1]] = domain
         count += 2
+        # CHECK EDGE CASES
     size = int(count / 2)
     return variables, domains, size
 
@@ -176,10 +224,6 @@ def main():
     csp = CSP(variables, domains, size)
     resyi = csp.backtracking({}, "most_constrained")
     print(resyi)
-
-
-    hars = {"z":[1,2]}
-    if "h" not in hars:
-        print("not in")
+    # print(csp.print_output({1: 1, 2: 3, 3: 100}))
 
 main()
