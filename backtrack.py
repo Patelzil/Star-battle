@@ -14,34 +14,42 @@ class CSP:
         for key in assignment:
             # value is cell number
             # check left cell
-            if (assignment[key] == value - 1) and (value - 1 % self.size != 0):
-                return False
+            if value - 1 % self.size != 0:
+                if assignment[key] == value - 1:
+                    return False
             # check right cell
-            if (assignment[key] == value + 1) and (value + 1 % self.size != 1):
-                return False
-            # check top cell
-            if (assignment[key] == value - self.size) or (value - self.size <= 0):
-                return False
-            # check top left cell
-            if (assignment[key] == value - self.size - 1) or (value - self.size - 1 <= 0) and (
-                    value - 1 % self.size != 0):
-                return False
-            # check top right cell
-            if (assignment[key] == value - self.size + 1) or (value - self.size + 1 <= 0) and (
-                    value + 1 % self.size != 1):
-                return False
+            if value + 1 % self.size != 1:
+                if assignment[key] == value + 1:
+                        return False
 
-            # check bottom cell
-            if (assignment[key] == value + self.size) or (value + self.size > self.size * self.size):
-                return False
-            # check bottom left
-            if (assignment[key] == value + self.size - 1) or (value + self.size > self.size * self.size) and (
-                    value - 1 % self.size != 0):
-                return False
-            # check bottom right
-            if (assignment[key] == value + self.size + 1) or (value + self.size > self.size * self.size) and (
-                    value + 1 % self.size != 1):
-                return False
+
+            # check top cell, if top most cell don't check as it is out of bound
+            if not value - self.size <= 0:
+                if assignment[key] == value - self.size:
+                    return False
+            # check top left cell if left most cell don't check top left don't check as it is out of bound
+                if value - self.size - 1 % self.size != 0:
+                    if assignment[key] == value - self.size - 1:
+                            return False
+            # check top right cell, if right most don't check as it is out of bound
+                if value - self.size + 1 % self.size != 1:
+                    if assignment[key] == value - self.size + 1:
+                            return False
+
+
+            # check bottom cell , if bottom row don't check as it is out of bound
+            if value + self.size <= self.size * self.size:
+                if assignment[key] == value + self.size:
+                    return False
+
+                # check bottom left, if left most cell don't check as it is out of bound
+                if value + self.size - 1 % self.size != 0:
+                    if assignment[key] == value + self.size - 1:
+                        return False
+                # check bottom right, right most cell don't check as it is out of bound
+                if value + self.size + 1 % self.size != 1:
+                    if assignment[key] == value + self.size + 1:
+                        return False
 
         return True
 
@@ -148,7 +156,7 @@ class CSP:
         # print("most_constrained")
         # print(reduced_domains)
         # print("most_constrained")
-        return most_constrained, reduced_domains
+        return most_constrained
 
     def most_constraining(self, assignment):
         pass
@@ -157,7 +165,7 @@ class CSP:
         pass
 
     def backtracking(self, assignment, heuristic):
-        # print(assignment)
+        print(assignment)
         result = {}
         # base case
         if len(assignment) == len(self.variables):
@@ -165,10 +173,10 @@ class CSP:
         else:
             # assignment is a dict
             # domain is a dict
-            variable, reduced_domains = self.select_variable(assignment, heuristic)
+            variable = self.select_variable(assignment, heuristic)
             # d[v] //edit so FC
 
-            for value in reduced_domains[variable]:
+            for value in self.domains[variable]:
                 if self.consistent(value, variable, assignment):
                     assignment[variable] = value
 
@@ -229,5 +237,7 @@ def main():
     csp = CSP(variables, domains, size)
     resyi = csp.backtracking({}, "most_constrained")
     csp.print_output(resyi)
+
+    print(10-1%10!= 0)
 
 main()
