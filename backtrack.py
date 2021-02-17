@@ -67,7 +67,7 @@ class CSP:
     def check_row(self, assignment, value):
         count = 0
         for key in assignment:
-            if int((assignment[key] - 1) // self.size) == int((value - 1) // self.size):
+            if ((assignment[key] - 1) // self.size) == ((value - 1) // self.size):
                 count += 1
             if count == 2:
                 return False
