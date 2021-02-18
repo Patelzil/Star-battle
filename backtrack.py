@@ -8,47 +8,47 @@ class CSP:
         self.size = size  # domain of each variable
         self.constraints = {}
         self.count = 0
-        self.max_ass = 0
+        self.nodes_visited = 0
 
     def check_neighbours(self, assignment, value):
         # Check if the value is directly neighbouring another variable
         for key in assignment:
             # value is cell number
             # check left cell
-            if value - 1 % self.size != 0:
+            if (value - 1) % self.size != 0:
                 if assignment[key] == value - 1:
                     return False
             # check right cell
-            if value + 1 % self.size != 1:
+            if (value + 1) % self.size != 1:
                 if assignment[key] == value + 1:
                         return False
 
 
             # check top cell, if top most cell don't check as it is out of bound
-            if not value - self.size <= 0:
+            if not (value - self.size <= 0):
                 if assignment[key] == value - self.size:
                     return False
             # check top left cell if left most cell don't check top left don't check as it is out of bound
-                if value - self.size - 1 % self.size != 0:
+                if (value - self.size - 1) % self.size != 0:
                     if assignment[key] == value - self.size - 1:
                             return False
             # check top right cell, if right most don't check as it is out of bound
-                if value - self.size + 1 % self.size != 1:
+                if (value - self.size + 1) % self.size != 1:
                     if assignment[key] == value - self.size + 1:
                             return False
 
 
             # check bottom cell , if bottom row don't check as it is out of bound
-            if value + self.size <= self.size * self.size:
+            if (value + self.size) <= (self.size * self.size):
                 if assignment[key] == value + self.size:
                     return False
 
                 # check bottom left, if left most cell don't check as it is out of bound
-                if value + self.size - 1 % self.size != 0:
+                if (value + self.size - 1) % self.size != 0:
                     if assignment[key] == value + self.size - 1:
                         return False
                 # check bottom right, right most cell don't check as it is out of bound
-                if value + self.size + 1 % self.size != 1:
+                if (value + self.size + 1) % self.size != 1:
                     if assignment[key] == value + self.size + 1:
                         return False
 
@@ -107,10 +107,11 @@ class CSP:
             return self.hybrid(assignment)
 
     def most_constrained(self, assignment):
+
         count = 2147483647
         most_constrained = -1
-
-        # # for every variable not in assigment. Take each assigned value and remove value from domain
+        #
+        # for every variable not in assigment. Take each assigned value and remove value from domain
         # for var in self.variables:
         #     if var not in assignment:
         #         return var
@@ -153,14 +154,34 @@ class CSP:
                             reduced_domains[var]:
                         reduced_domains[var].remove(assigned_value + self.size + 1)
 
+        # remove rows
+        for var in self.variables:
+            if var not in assignment:
+                for value in reduced_domains[var]:
+                    count_row = 0
+                    for key in assignment:
+                        assigned_value = assignment[key]  # variable
+                        if ((assigned_value - 1) // self.size) == ((value - 1) // self.size):
+                            count_row += 1
+                        if count_row == 2 and value in reduced_domains[var]:
+                            reduced_domains[var].remove(value)
+        # remove columns
+        for var in self.variables:
+            if var not in assignment:
+                for value in reduced_domains[var]:
+                    count_column = 0
+                    for key in assignment:
+                        assigned_value = assignment[key]  # variable
+                        if (assigned_value % self.size) == (value % self.size):
+                            count_column += 1
+                        if count_column == 2 and value in reduced_domains[var]:
+                            reduced_domains[var].remove(value)
+
         for key in reduced_domains:
             if key not in assignment:
                 if len(reduced_domains[key]) < count:
                     count = len(reduced_domains[key])
                     most_constrained = key
-        # print("most_constrained")
-        # print(reduced_domains)
-        # print("most_constrained")
 
         return most_constrained
 
@@ -171,14 +192,9 @@ class CSP:
         pass
 
     def backtracking(self, assignment, heuristic):
-        # print(len(assignment))
-        if len(assignment) > self.max_ass:
-            self.max_ass = len(assignment)
-        result = {}
+        print(len(assignment))
 
-        if self.max_ass == 19:
-            print(assignment)
-            self.max_ass = 0
+        self.nodes_visited += 1
         # base case
         if len(assignment) == len(self.variables):
             return assignment
@@ -195,6 +211,7 @@ class CSP:
                     result = self.backtracking(assignment, heuristic)
 
                     if result is not None:
+                        print(assignment[15])
                         return assignment  # final assignmnet.
 
                     assignment.pop(variable)
@@ -207,7 +224,6 @@ class CSP:
     # returns a string with the appropriate output
     def print_output(self, assignment):
         output = ""
-        print(self.max_ass)
         # check for no solution
         if assignment is None:
             output = "No solution"
@@ -248,8 +264,7 @@ def read_file():
 def main():
     variables, domains, size = read_file()
     csp = CSP(variables, domains, size)
-    resyi = csp.backtracking({}, "most_constrained")
+    resyi = csp.backtracking({} ,"most_constrained")
     csp.print_output(resyi)
-
 
 main()
