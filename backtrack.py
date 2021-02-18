@@ -1,4 +1,6 @@
 import copy
+import time
+from multiprocessing import Process
 
 
 class CSP:
@@ -21,22 +23,20 @@ class CSP:
             # check right cell
             if (value + 1) % self.size != 1:
                 if assignment[key] == value + 1:
-                        return False
-
+                    return False
 
             # check top cell, if top most cell don't check as it is out of bound
             if not (value - self.size <= 0):
                 if assignment[key] == value - self.size:
                     return False
-            # check top left cell if left most cell don't check top left don't check as it is out of bound
+                # check top left cell if left most cell don't check top left don't check as it is out of bound
                 if (value - self.size - 1) % self.size != 0:
                     if assignment[key] == value - self.size - 1:
-                            return False
-            # check top right cell, if right most don't check as it is out of bound
+                        return False
+                # check top right cell, if right most don't check as it is out of bound
                 if (value - self.size + 1) % self.size != 1:
                     if assignment[key] == value - self.size + 1:
-                            return False
-
+                        return False
 
             # check bottom cell , if bottom row don't check as it is out of bound
             if (value + self.size) <= (self.size * self.size):
@@ -106,16 +106,10 @@ class CSP:
         elif heuristic == "hybrid":
             return self.hybrid(assignment)
 
-    def most_constrained(self, assignment):
+    def reduce_domains(self, assignment):
 
-        count = 2147483647
-        most_constrained = -1
-        #
-        # for every variable not in assigment. Take each assigned value and remove value from domain
-        # for var in self.variables:
-        #     if var not in assignment:
-        #         return var
         reduced_domains = copy.deepcopy(self.domains)
+
         # for every variable not in assigment. Take each assigned value and remove value from domain
         for var in self.variables:
             if var not in assignment:
@@ -135,18 +129,18 @@ class CSP:
                             reduced_domains[var]:
                         reduced_domains[var].remove(assigned_value + self.size)
                     # check and remove top
-                    if (assigned_value - self.size) > 0 and( assigned_value - self.size )in reduced_domains[var]:
+                    if (assigned_value - self.size) > 0 and (assigned_value - self.size) in reduced_domains[var]:
                         reduced_domains[var].remove(assigned_value - self.size)
                     # check and remove top left
-                    if (assigned_value - self.size - 1) % self.size != 0 and( assigned_value - self.size - 1) in \
+                    if (assigned_value - self.size - 1) % self.size != 0 and (assigned_value - self.size - 1) in \
                             reduced_domains[var]:
                         reduced_domains[var].remove(assigned_value - self.size - 1)
                     # check and remove top right
-                    if (assigned_value - self.size + 1) % self.size != 1 and (assigned_value - self.size + 1 )in \
+                    if (assigned_value - self.size + 1) % self.size != 1 and (assigned_value - self.size + 1) in \
                             reduced_domains[var]:
                         reduced_domains[var].remove(assigned_value - self.size + 1)
                     # check and remove bottom left
-                    if (assigned_value + self.size - 1) % self.size != 0 and (assigned_value + self.size - 1 )in \
+                    if (assigned_value + self.size - 1) % self.size != 0 and (assigned_value + self.size - 1) in \
                             reduced_domains[var]:
                         reduced_domains[var].remove(assigned_value + self.size - 1)
                     # check and remove bottom right
@@ -177,6 +171,15 @@ class CSP:
                         if count_column == 2 and value in reduced_domains[var]:
                             reduced_domains[var].remove(value)
 
+        return reduced_domains
+
+    def most_constrained(self, assignment):
+        # count => checking the fewest possible options left.
+        count = 2147483647
+        most_constrained = -1
+
+        reduced_domains = self.reduce_domains(assignment)
+
         for key in reduced_domains:
             if key not in assignment:
                 if len(reduced_domains[key]) < count:
@@ -186,14 +189,42 @@ class CSP:
         return most_constrained
 
     def most_constraining(self, assignment):
-        pass
+        most_constraining = -1
+        count = 2147483647
+
+        list_of_length_reduced_domain = {}
+        # Check all unassigned variables.
+        for var in self.variables:
+            if var not in assignment:
+                # copy the assignment
+                local_assignment = assignment.copy()
+                # take first available value from variable's reduced domain
+                value = self.domains[var][0]
+                # assign the value to the local assignment
+                local_assignment[var] = value
+                # reduce the domains.
+                reduced_local_domains = self.reduce_domains(local_assignment)
+                # for every variable in the new reduced domain
+                for key in reduced_local_domains:
+                    # if variable not in the local assignment
+                    if key not in local_assignment:
+                        if var in list_of_length_reduced_domain:
+                            list_of_length_reduced_domain[var] += len(reduced_local_domains[key])
+                        else:
+                            list_of_length_reduced_domain[var] = len(reduced_local_domains[key])
+                    # store the var that reduces the most for others
+
+        for key in list_of_length_reduced_domain:
+            if list_of_length_reduced_domain[key] < count:
+                most_constraining = key
+                count = list_of_length_reduced_domain[key]
+
+        return most_constraining
 
     def hybrid(self, assignment):
         pass
 
     def backtracking(self, assignment, heuristic):
-        print(len(assignment))
-
         self.nodes_visited += 1
         # base case
         if len(assignment) == len(self.variables):
@@ -203,6 +234,8 @@ class CSP:
             # domain is a dict
             variable = self.select_variable(assignment, heuristic)
             # d[v] //edit so FC
+            # if variable == -1:
+            #     return None
 
             for value in self.domains[variable]:
                 if self.consistent(value, variable, assignment):
@@ -211,7 +244,6 @@ class CSP:
                     result = self.backtracking(assignment, heuristic)
 
                     if result is not None:
-                        print(assignment[15])
                         return assignment  # final assignmnet.
 
                     assignment.pop(variable)
@@ -228,13 +260,14 @@ class CSP:
         if assignment is None:
             output = "No solution"
         else:
-            for num in range(1, self.size*self.size+1):
+            for num in range(1, self.size * self.size + 1):
                 if (num % self.size) == 1:
                     output += "\n|"
                 if num in assignment.values():
                     output += "X|"
                 else:
                     output += ".|"
+        print("Number of Nodes:", self.nodes_visited)
         print(output)
 
 
@@ -261,10 +294,18 @@ def read_file():
     return variables, domains, size
 
 
-def main():
+def solve_csp():
     variables, domains, size = read_file()
     csp = CSP(variables, domains, size)
-    resyi = csp.backtracking({} ,"most_constrained")
+    resyi = csp.backtracking({}, "most_constrained")
     csp.print_output(resyi)
 
-main()
+
+if __name__ == '__main__':
+    solve = Process(target=solve_csp)
+    # Start the process
+    solve.start()
+    # time out after 10 min (600 seconds)
+    solve.join(timeout=600)
+    # terminate the process.
+    solve.terminate()
