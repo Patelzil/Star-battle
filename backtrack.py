@@ -225,7 +225,6 @@ class CSP:
         pass
 
     def backtracking(self, assignment, heuristic):
-        self.nodes_visited += 1
         # base case
         if len(assignment) == len(self.variables):
             return assignment
@@ -238,6 +237,7 @@ class CSP:
             #     return None
 
             for value in self.domains[variable]:
+                self.nodes_visited += 1
                 if self.consistent(value, variable, assignment):
                     assignment[variable] = value
 
@@ -305,7 +305,10 @@ if __name__ == '__main__':
     solve = Process(target=solve_csp)
     # Start the process
     solve.start()
+    start_time = time.time()
     # time out after 10 min (600 seconds)
     solve.join(timeout=600)
-    # terminate the process.
+
+    print("--- %s seconds ---" % (time.time() - start_time))
+
     solve.terminate()
