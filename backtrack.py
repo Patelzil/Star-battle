@@ -308,7 +308,6 @@ if __name__ == '__main__':
     start_time = time.time()
     # time out after 10 min (600 seconds)
     solve.join(timeout=600)
-
     print("--- %s seconds ---" % (time.time() - start_time))
 
     solve.terminate()
