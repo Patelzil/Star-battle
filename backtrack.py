@@ -188,11 +188,19 @@ class CSP:
 
         return most_constrained
 
+    def total_length(self, domains):
+        result = 0
+        for var in domains:
+            result += len(domains[var])
+        return result
+
     def most_constraining(self, assignment):
         most_constraining = -1
         count = 2147483647
 
-        list_of_length_reduced_domain = {}
+        # reduced = self.reduce_domains(assignment)
+        list_of_lengths = {}
+        list_of_reduced_domains = {}
         # Check all unassigned variables.
         for var in self.variables:
             if var not in assignment:
@@ -204,22 +212,56 @@ class CSP:
                 local_assignment[var] = value
                 # reduce the domains.
                 reduced_local_domains = self.reduce_domains(local_assignment)
-                # for every variable in the new reduced domain
-                for key in reduced_local_domains:
-                    # if variable not in the local assignment
-                    if key not in local_assignment:
-                        if var in list_of_length_reduced_domain:
-                            list_of_length_reduced_domain[var] += len(reduced_local_domains[key])
-                        else:
-                            list_of_length_reduced_domain[var] = len(reduced_local_domains[key])
-                    # store the var that reduces the most for others
+                list_of_lengths[var] = self.total_length(reduced_local_domains)
+                list_of_reduced_domains[var] = reduced_local_domains
 
-        for key in list_of_length_reduced_domain:
-            if list_of_length_reduced_domain[key] < count:
+        # store the var that reduces the most for others
+        # list_of_lengths = {}
+        # for var in list_of_reduced_domains:
+        #     for key in list_of_reduced_domains[var]:
+        #         if var in list_of_lengths:
+        #             list_of_lengths[var] += len(list_of_reduced_domains[var][key])
+        #         else:
+        #             list_of_lengths[var] = len(list_of_reduced_domains[var][key])
+
+        for key in list_of_lengths:
+            if list_of_lengths[key] < count:
                 most_constraining = key
-                count = list_of_length_reduced_domain[key]
+                count = list_of_lengths[key]
 
         return most_constraining
+
+        # most_constraining = -1
+        # count = 2147483647
+        #
+        # list_of_length_reduced_domain = {}
+        # # Check all unassigned variables.
+        # for var in self.variables:
+        #     if var not in assignment:
+        #         # copy the assignment
+        #         local_assignment = assignment.copy()
+        #         # take first available value from variable's reduced domain
+        #         value = self.domains[var][0]
+        #         # assign the value to the local assignment
+        #         local_assignment[var] = value
+        #         # reduce the domains.
+        #         reduced_local_domains = self.reduce_domains(local_assignment)
+        #         # for every variable in the new reduced domain
+        #         for key in reduced_local_domains:
+        #             # if variable not in the local assignment
+        #             if key not in local_assignment:
+        #                 if var in list_of_length_reduced_domain:
+        #                     list_of_length_reduced_domain[var] += len(reduced_local_domains[key])
+        #                 else:
+        #                     list_of_length_reduced_domain[var] = len(reduced_local_domains[key])
+        #             # store the var that reduces the most for others
+        #
+        # for key in list_of_length_reduced_domain:
+        #     if list_of_length_reduced_domain[key] < count:
+        #         most_constraining = key
+        #         count = list_of_length_reduced_domain[key]
+        #
+        # return most_constraining
 
     def hybrid(self, assignment):
         pass
@@ -233,8 +275,8 @@ class CSP:
             # domain is a dict
             variable = self.select_variable(assignment, heuristic)
             # d[v] //edit so FC
-            # if variable == -1:
-            #     return None
+            if variable == -1:
+                return None
 
             for value in self.domains[variable]:
                 self.nodes_visited += 1
@@ -297,7 +339,7 @@ def read_file():
 def solve_csp():
     variables, domains, size = read_file()
     csp = CSP(variables, domains, size)
-    resyi = csp.backtracking({}, "most_constrained")
+    resyi = csp.backtracking({}, "most_constraining")
     csp.print_output(resyi)
 
 

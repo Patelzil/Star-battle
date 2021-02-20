@@ -74,7 +74,7 @@ class CSP:
         return True
 
     # need to pass variable for block check
-    def consistent(self, value, variable, assignment):
+    def consistent(self, value, assignment):
         result = True
         # Check if any variable in the assignment has the same value
         for key in assignment:
@@ -173,73 +173,6 @@ class CSP:
 
         return reduced_domains
 
-    def reduce(self, assignment, reduced):
-
-        reduced_domains = copy.deepcopy(reduced)
-
-        # for every variable not in assigment. Take each assigned value and remove value from domain
-        for var in self.variables:
-            if var not in assignment:
-                for key in assignment:
-                    assigned_value = assignment[key]  # variable
-                    if assigned_value in reduced_domains[var]:
-                        reduced_domains[var].remove(assigned_value)
-                    # checking if assigned values are not neighbours to domain
-                    # check and remove right
-                    if (assigned_value + 1) % self.size != 1 and assigned_value + 1 in reduced_domains[var]:
-                        reduced_domains[var].remove(assigned_value + 1)
-                    # check and remove left
-                    if (assigned_value - 1) % self.size != 0 and assigned_value - 1 in reduced_domains[var]:
-                        reduced_domains[var].remove(assigned_value - 1)
-                    # check and remove down
-                    if (assigned_value + self.size) <= self.size * self.size and assigned_value + self.size in \
-                            reduced_domains[var]:
-                        reduced_domains[var].remove(assigned_value + self.size)
-                    # check and remove top
-                    if (assigned_value - self.size) > 0 and (assigned_value - self.size) in reduced_domains[var]:
-                        reduced_domains[var].remove(assigned_value - self.size)
-                    # check and remove top left
-                    if (assigned_value - self.size - 1) % self.size != 0 and (assigned_value - self.size - 1) in \
-                            reduced_domains[var]:
-                        reduced_domains[var].remove(assigned_value - self.size - 1)
-                    # check and remove top right
-                    if (assigned_value - self.size + 1) % self.size != 1 and (assigned_value - self.size + 1) in \
-                            reduced_domains[var]:
-                        reduced_domains[var].remove(assigned_value - self.size + 1)
-                    # check and remove bottom left
-                    if (assigned_value + self.size - 1) % self.size != 0 and (assigned_value + self.size - 1) in \
-                            reduced_domains[var]:
-                        reduced_domains[var].remove(assigned_value + self.size - 1)
-                    # check and remove bottom right
-                    if (assigned_value + self.size + 1) % self.size != 1 and (assigned_value + self.size + 1) in \
-                            reduced_domains[var]:
-                        reduced_domains[var].remove(assigned_value + self.size + 1)
-
-        # remove rows
-        for var in self.variables:
-            if var not in assignment:
-                for value in reduced_domains[var]:
-                    count_row = 0
-                    for key in assignment:
-                        assigned_value = assignment[key]  # variable
-                        if ((assigned_value - 1) // self.size) == ((value - 1) // self.size):
-                            count_row += 1
-                        if count_row == 2 and value in reduced_domains[var]:
-                            reduced_domains[var].remove(value)
-        # remove columns
-        for var in self.variables:
-            if var not in assignment:
-                for value in reduced_domains[var]:
-                    count_column = 0
-                    for key in assignment:
-                        assigned_value = assignment[key]  # variable
-                        if (assigned_value % self.size) == (value % self.size):
-                            count_column += 1
-                        if count_column == 2 and value in reduced_domains[var]:
-                            reduced_domains[var].remove(value)
-
-        return reduced_domains
-
     def most_constrained(self, assignment):
         # count => checking the fewest possible options left.
         count = 2147483647
@@ -255,45 +188,50 @@ class CSP:
 
         return most_constrained, reduced_domains
 
+    def total_length(self, domains):
+        result = 0
+        for var in domains:
+            result += len(domains[var])
+        return result
+
     def most_constraining(self, assignment):
         most_constraining = -1
         count = 2147483647
-
         # reduced = self.reduce_domains(assignment)
 
         list_of_reduced_domains = {}
-        # Check all unassigned variables.
-        for var in self.variables:
-            if var not in assignment:
-                # copy the assignment
-                local_assignment = assignment.copy()
-                # take first available value from variable's reduced domain
-                value = self.domains[var][0]
-                # assign the value to the local assignment
-                local_assignment[var] = value
-                # reduce the domains.
-                reduced_local_domains = self.reduce_domains(local_assignment)
-
-                # for every variable in the new reduced domain
-                # for key in reduced:
-                #     # if variable not in the local assignment
-                #     if key not in local_assignment:
-                list_of_reduced_domains[var] = reduced_local_domains
-
-                    # store the var that reduces the most for others\
         list_of_lengths = {}
+
+        index = 0
+        # Check all unassigned variables.
+        while (len(list_of_lengths) == 0):
+            for var in self.variables:
+                if var not in assignment:
+                    # copy the assignment
+                    local_assignment = assignment.copy()
+                    # take first available value from variable's reduced domain
+                    value = self.domains[var][index]
+                    # assign the value to the local assignment
+                    if self.consistent(value,local_assignment):
+                        local_assignment[var] = value
+
+                        # reduce the domains.
+                        reduced_local_domains = self.reduce_domains(assignment)
+                        # list_of_lengths[var] = self.total_length(reduced_local_domains)
+                        list_of_reduced_domains[var] = reduced_local_domains
+
+            index+=1
+
+
         for var in list_of_reduced_domains:
-            for key in list_of_reduced_domains[var]:
-                if var in list_of_lengths:
-                    list_of_lengths[var] += len(list_of_reduced_domains[var][key])
-                else:
-                    list_of_lengths[var] = len(list_of_reduced_domains[var][key])
+            list_of_lengths[var] = self.total_length(list_of_reduced_domains[var])
 
         for key in list_of_lengths:
             if list_of_lengths[key] < count:
                 most_constraining = key
                 count = list_of_lengths[key]
-        # print(most_constraining)
+
+        print(list_of_lengths)
         return most_constraining, list_of_reduced_domains[most_constraining]
 
     def hybrid(self, assignment):
@@ -313,7 +251,7 @@ class CSP:
 
             for value in reduced_domains[variable]:
                 self.nodes_visited += 1
-                if self.consistent(value, variable, assignment):
+                if self.consistent(value, assignment):
                     assignment[variable] = value
 
                     result = self.backtracking(assignment, heuristic)
