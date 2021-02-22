@@ -1,4 +1,5 @@
 import copy
+import math
 import time
 from multiprocessing import Process
 
@@ -342,6 +343,15 @@ def solve_csp():
     resyi = csp.backtracking({}, "most_constraining")
     csp.print_output(resyi)
 
+def convert_string_to_grid_array(grid_string):
+    blocks = []
+    grid_size = int(math.sqrt(len(grid_string)))
+    for i in range(grid_size):
+        blocks.append([])
+
+    for i, char in enumerate(grid_string):
+        blocks[ord(char) - ord('A')].append(i + 1)
+    return blocks, grid_size
 
 if __name__ == '__main__':
     solve = Process(target=solve_csp)
