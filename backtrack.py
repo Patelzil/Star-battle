@@ -194,79 +194,89 @@ class CSP:
             result += len(domains[var])
         return result
 
+    def get_neighbours(self, value):
+        neighbours = [value]
+
+        #right
+        if (value + 1) % self.size != 1:
+            neighbours.append(value+1)
+
+        # check and remove left
+        if (value - 1) % self.size != 0:
+            neighbours.append(value-1)
+
+        # check and remove down
+        if (value + self.size) <= self.size * self.size:
+            neighbours.append((value + self.size))
+
+        # check and remove top
+        if (value - self.size) > 0:
+            neighbours.append((value - self.size))
+
+        # check and remove top left
+        if (value - self.size - 1) % self.size != 0:
+            neighbours.append((value - self.size - 1))
+
+        # check and remove top right
+        if (value - self.size + 1) % self.size != 1:
+            neighbours.append((value - self.size + 1))
+
+        # check and remove bottom left
+        if (value + self.size - 1) % self.size != 0:
+            neighbours.append((value + self.size - 1))
+
+        # check and remove bottom right
+        if (value + self.size + 1) % self.size != 1:
+            neighbours.append((value + self.size + 1))
+
+        return neighbours
+
     def most_constraining(self, assignment):
         most_constraining = -1
-        count = 2147483647
+        max_count = -1
 
-        # reduced = self.reduce_domains(assignment)
         list_of_lengths = {}
-        list_of_reduced_domains = {}
-        # Check all unassigned variables.
-        for var in self.variables:
-            if var not in assignment:
-                # copy the assignment
-                local_assignment = assignment.copy()
-                # take first available value from variable's reduced domain
-                value = self.domains[var][0]
-                # assign the value to the local assignment
-                local_assignment[var] = value
-                # reduce the domains.
-                reduced_local_domains = self.reduce_domains(local_assignment)
-                list_of_lengths[var] = self.total_length(reduced_local_domains)
-                list_of_reduced_domains[var] = reduced_local_domains
 
-        # store the var that reduces the most for others
-        # list_of_lengths = {}
-        # for var in list_of_reduced_domains:
-        #     for key in list_of_reduced_domains[var]:
-        #         if var in list_of_lengths:
-        #             list_of_lengths[var] += len(list_of_reduced_domains[var][key])
-        #         else:
-        #             list_of_lengths[var] = len(list_of_reduced_domains[var][key])
+        local_domains = self.reduce_domains(assignment)
+        list_of_neighbours = {}
+        for variable in self.variables:
+            if variable not in assignment:
+                local_var = variable
+                if len(local_domains[local_var]) != 0:
+                    first_val = local_domains[local_var][0]
+
+                    list_of_neighbours[variable] = self.get_neighbours(first_val)
+
+        count = 0
+        for variable in list_of_neighbours:
+            for value in list_of_neighbours[variable]:
+                for var in self.variables:
+                    if var not in assignment and var != variable:
+                        if value in self.domains[var]:
+                            count += 1
+
+            list_of_lengths[variable] = count
 
         for key in list_of_lengths:
-            if list_of_lengths[key] < count:
+            if list_of_lengths[key] > max_count:
                 most_constraining = key
-                count = list_of_lengths[key]
+                max_count = list_of_lengths[key]
+
+        list_of_reduced_domains = {}
+        local_assignment = assignment.copy()
+        if most_constraining == -1:
+            return most_constraining
+        else:
+            local_assignment[most_constraining] = self.domains[most_constraining][0]
 
         return most_constraining
 
-        # most_constraining = -1
-        # count = 2147483647
-        #
-        # list_of_length_reduced_domain = {}
-        # # Check all unassigned variables.
-        # for var in self.variables:
-        #     if var not in assignment:
-        #         # copy the assignment
-        #         local_assignment = assignment.copy()
-        #         # take first available value from variable's reduced domain
-        #         value = self.domains[var][0]
-        #         # assign the value to the local assignment
-        #         local_assignment[var] = value
-        #         # reduce the domains.
-        #         reduced_local_domains = self.reduce_domains(local_assignment)
-        #         # for every variable in the new reduced domain
-        #         for key in reduced_local_domains:
-        #             # if variable not in the local assignment
-        #             if key not in local_assignment:
-        #                 if var in list_of_length_reduced_domain:
-        #                     list_of_length_reduced_domain[var] += len(reduced_local_domains[key])
-        #                 else:
-        #                     list_of_length_reduced_domain[var] = len(reduced_local_domains[key])
-        #             # store the var that reduces the most for others
-        #
-        # for key in list_of_length_reduced_domain:
-        #     if list_of_length_reduced_domain[key] < count:
-        #         most_constraining = key
-        #         count = list_of_length_reduced_domain[key]
-        #
-        # return most_constraining
 
     def hybrid(self, assignment):
         pass
 
     def backtracking(self, assignment, heuristic):
+        # print(assignment)
         # base case
         if len(assignment) == len(self.variables):
             return assignment
