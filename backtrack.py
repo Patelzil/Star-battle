@@ -1,5 +1,9 @@
+#
+# BACKTRACKING
+# COMP 4190 Assignment 1
+# Harsh Patel -7846258, Zil Patel - 7876456
+#
 import copy
-import math
 import time
 from multiprocessing import Process
 
@@ -13,10 +17,17 @@ class CSP:
         self.count = 0
         self.nodes_visited = 0
 
+    # check_neighbours(self, assignment, value)
+    # Checks if all the neighbors of the value is valid in the assignment
+    #
+    # assignment - dictionary containing the currently assigned values
+    # value - value to be added to the assignment
+    # returns a boolean, true if all valid
     def check_neighbours(self, assignment, value):
         # Check if the value is directly neighbouring another variable
         for key in assignment:
             # value is cell number
+
             # check left cell
             if (value - 1) % self.size != 0:
                 if assignment[key] == value - 1:
@@ -55,6 +66,12 @@ class CSP:
 
         return True
 
+    # check_column(self, assignment, value)
+    # Checks if the column has 2 assigned values
+    #
+    # assignment - dictionary containing the currently assigned values
+    # value - value to be added to the assignment
+    # returns a boolean, true if 1 or less assigned
     def check_column(self, assignment, value):
         count = 0
 
@@ -65,6 +82,12 @@ class CSP:
                 return False
         return True
 
+    # check_row(self, assignment, value)
+    # Checks if the row has 2 assigned values
+    #
+    # assignment - dictionary containing the currently assigned values
+    # value - value to be added to the assignment
+    # returns a boolean, true if 1 or less assigned
     def check_row(self, assignment, value):
         count = 0
         for key in assignment:
@@ -74,31 +97,44 @@ class CSP:
                 return False
         return True
 
-    # need to pass variable for block check
-    def consistent(self, value, variable, assignment):
+    # consistent(self, value, assignment):
+    # Checks if the value is consistent with it's neighbours, row and column
+    #
+    # assignment - dictionary containing the currently assigned values
+    # value - value to be added to the assignment
+    # returns a boolean, true if consistent.
+    def consistent(self, value, assignment):
         result = True
         # Check if any variable in the assignment has the same value
         for key in assignment:
             if assignment[key] == value:
                 return False
-
+        # Check if neighbours are valid.
         neighbours_valid = self.check_neighbours(assignment, value)
 
+        # If neighbours are not valid return false.
         if not neighbours_valid:
             return False
 
+        # Check if columns are valid.
         column_valid = self.check_column(assignment, value)
-        # check column
+        # If column not valid return false.
         if not column_valid:
             return False
 
+        # Check if rows are valid.
         row_valid = self.check_row(assignment, value)
-        # check column
+        # If row not valid return false.
         if not row_valid:
             return False
 
         return result
 
+    # select_variable(self, assignment, heuristic):
+    # Selects which heuristic to pass in.
+    #
+    # assignment - dictionary containing the currently assigned values
+    # heuristic - value to be added to the assignment
     def select_variable(self, assignment, heuristic):
         if heuristic == "most_constrained":
             return self.most_constrained(assignment)
@@ -107,8 +143,13 @@ class CSP:
         elif heuristic == "hybrid":
             return self.hybrid(assignment)
 
+    # reduce_domains(self, assignment)
+    # reduces the domains of variables depending on the current assignment
+    #
+    # assignment - dictionary containing the currently assigned values
+    # returns a dictionary that contains reduced domains
     def reduce_domains(self, assignment):
-
+        # copy the domains of the variables
         reduced_domains = copy.deepcopy(self.domains)
 
         # for every variable not in assigment. Take each assigned value and remove value from domain
@@ -149,7 +190,7 @@ class CSP:
                             reduced_domains[var]:
                         reduced_domains[var].remove(assigned_value + self.size + 1)
 
-        # remove rows
+        # check and remove rows
         for var in self.variables:
             if var not in assignment:
                 for value in reduced_domains[var]:
@@ -160,7 +201,8 @@ class CSP:
                             count_row += 1
                         if count_row == 2 and value in reduced_domains[var]:
                             reduced_domains[var].remove(value)
-        # remove columns
+
+        # check and remove columns
         for var in self.variables:
             if var not in assignment:
                 for value in reduced_domains[var]:
@@ -174,6 +216,11 @@ class CSP:
 
         return reduced_domains
 
+    # most_constrained(self, assignment)
+    # select the next node that has the fewest possible options left
+    #
+    # assignment - dictionary containing the currently assigned values
+    # returns the most constrained variable
     def most_constrained(self, assignment):
         # count => checking the fewest possible options left.
         count = 2147483647
@@ -189,22 +236,32 @@ class CSP:
 
         return most_constrained
 
+    # total_length(self, domains)
+    # calculates the length of all the domains
+    #
+    # domains - used to calculate length
+    # returns the total length of the domains passed
     def total_length(self, domains):
         result = 0
         for var in domains:
             result += len(domains[var])
         return result
 
+    # get_neighbours(self, value):
+    # Gets the list of neighbours
+    #
+    # value - checks the value's neighbours
+    # returns the list of neighbours
     def get_neighbours(self, value):
         neighbours = [value]
 
-        #right
+        # right
         if (value + 1) % self.size != 1:
-            neighbours.append(value+1)
+            neighbours.append(value + 1)
 
         # check and remove left
         if (value - 1) % self.size != 0:
-            neighbours.append(value-1)
+            neighbours.append(value - 1)
 
         # check and remove down
         if (value + self.size) <= self.size * self.size:
@@ -232,14 +289,23 @@ class CSP:
 
         return neighbours
 
+    # most_constraining(self, assignment)
+    # select the next node that constraints the other nodes the most
+    #
+    # assignment - dictionary containing the currently assigned values
+    # returns the most constraining variable
     def most_constraining(self, assignment):
         most_constraining = -1
         max_count = -1
-
+        # Stores the list of lengths to check domains.
         list_of_lengths = {}
 
+        # Reduces the domains for the assignment for checking.
         local_domains = self.reduce_domains(assignment)
+        # Gets the list of neighbours.
         list_of_neighbours = {}
+
+        # Go through all variables and get the neighbours.
         for variable in self.variables:
             if variable not in assignment:
                 local_var = variable
@@ -248,6 +314,7 @@ class CSP:
 
                     list_of_neighbours[variable] = self.get_neighbours(first_val)
 
+        # Check for the number of variables that are constrained.
         count = 0
         for variable in list_of_neighbours:
             for value in list_of_neighbours[variable]:
@@ -258,12 +325,13 @@ class CSP:
 
             list_of_lengths[variable] = count
 
+        # Get the most constraining value.
         for key in list_of_lengths:
             if list_of_lengths[key] > max_count:
                 most_constraining = key
                 max_count = list_of_lengths[key]
 
-        list_of_reduced_domains = {}
+        # Return the most constraining.
         local_assignment = assignment.copy()
         if most_constraining == -1:
             return most_constraining
@@ -272,15 +340,24 @@ class CSP:
 
         return most_constraining
 
-
+    # hybrid(self, assignment):
+    # Mixture of both most constraining and most constrained.
+    #
+    # assignment - dictionary containing the currently assigned values
+    # returns the hybrid variable.
     def hybrid(self, assignment):
         hybrid_var = -1
         max_count = -1
 
+        # Stores the list of lengths to check domains.
         list_of_lengths = {}
 
+        # Reduces the domains for the assignment for checking.
         local_domains = self.reduce_domains(assignment)
+        # Gets the list of neighbours.
         list_of_neighbours = {}
+
+        # Go through all variables and get the neighbours.
         for variable in self.variables:
             if variable not in assignment:
                 local_var = variable
@@ -289,6 +366,7 @@ class CSP:
 
                     list_of_neighbours[variable] = self.get_neighbours(first_val)
 
+        # Check for the number of variables that are constrained.
         count = 0
         for variable in list_of_neighbours:
             for value in list_of_neighbours[variable]:
@@ -300,12 +378,14 @@ class CSP:
             list_of_lengths[variable] = count
 
         most_constrained_length = 2147483647
+        # Get the hybrid value.
         for key in list_of_lengths:
             if list_of_lengths[key] > max_count and len(local_domains[key]) < most_constrained_length:
                 hybrid_var = key
                 max_count = list_of_lengths[key]
                 most_constrained_length = len(local_domains[key])
 
+        # Return hybrid selected variable.
         list_of_reduced_domains = {}
         local_assignment = assignment.copy()
         if hybrid_var == -1:
@@ -316,9 +396,13 @@ class CSP:
 
         return hybrid_var
 
-
+    # backtracking(self, assignment, heuristic):
+    # Backtracking algorithm tht solves the heuristic.
+    #
+    # assignment - dictionary containing the currently assigned values
+    # heuristic - heuristic to be used for algorithm
+    # returns None if no solution, returns true if solution is correct.
     def backtracking(self, assignment, heuristic):
-        # print(assignment)
         # base case
         if len(assignment) == len(self.variables):
             return assignment
@@ -326,19 +410,18 @@ class CSP:
             # assignment is a dict
             # domain is a dict
             variable = self.select_variable(assignment, heuristic)
-            # d[v] //edit so FC
             if variable == -1:
                 return None
 
             for value in self.domains[variable]:
                 self.nodes_visited += 1
-                if self.consistent(value, variable, assignment):
+                # Check the consistency of value, if consistent then do recursion.
+                if self.consistent(value, assignment):
                     assignment[variable] = value
-
                     result = self.backtracking(assignment, heuristic)
 
                     if result is not None:
-                        return assignment  # final assignmnet.
+                        return assignment  # final assignment.
 
                     assignment.pop(variable)
             return None
@@ -350,7 +433,8 @@ class CSP:
     # returns a string with the appropriate output
     def print_output(self, assignment):
         output = ""
-        # check for no solution
+
+        # if no assignment then no solution
         if assignment is None:
             output = "No solution"
         else:
@@ -361,56 +445,101 @@ class CSP:
                     output += "X|"
                 else:
                     output += ".|"
-        print("Number of Nodes:", self.nodes_visited)
+
+            # if assignment value should not exist in the grid then return no solution
+            for var in assignment:
+                if assignment[var] > self.size * self.size:
+                    output = "No solution"
+
         print(output)
+        print("\nNumber of Nodes:", self.nodes_visited)
 
 
+# read_file
+#
 # Returns a list of variables, and domains.
-def read_file():
-    file = open("input")
-    lines = file.readlines()
-    # List of variables.
-    variables = [x + 1 for x in range(len(lines) * 2)]
-    # Dictionary of domains
-    domains = {}
-    # Keeping track of Variables
-    count = 0
-    for line in lines:
-        str_values = line.split("\\t")[1].rstrip().split(",")
-        domain = []
-        for value in str_values:
-            domain.append(int(value))
-        domains[variables[count]] = domain
-        domains[variables[count + 1]] = domain
-        count += 2
-        # CHECK EDGE CASES
-    size = int(count / 2)
-    return variables, domains, size
+def read_file(read_files):
+    for file_name in read_files:
+        file = open(file_name)
+        lines = file.readlines()
 
+        # List of variables.
+        variables = [x + 1 for x in range(len(lines) * 2)]
 
-def solve_csp():
-    variables, domains, size = read_file()
+        # Dictionary of domains
+        domains = {}
+
+        # Keeping track of Variables
+        count = 0
+        for line in lines:
+            str_values = line.split("\\t")[1].rstrip().split(",")
+            domain = []
+            for value in str_values:
+                domain.append(int(value))
+            domains[variables[count]] = domain
+            domains[variables[count + 1]] = domain
+            count += 2
+            # CHECK EDGE CASES
+        size = int(count / 2)
+
+        solve_csp(variables, domains, size)
+
+# READING FILES AND PASSING HEURISTICS
+def run_constrained(variables, domains, size):
     csp = CSP(variables, domains, size)
-    resyi = csp.backtracking({}, "most_constraining")
-    csp.print_output(resyi)
+    constrained = csp.backtracking({}, "most_constrained")
+    csp.print_output(constrained)
 
-def convert_string_to_grid_array(grid_string):
-    blocks = []
-    grid_size = int(math.sqrt(len(grid_string)))
-    for i in range(grid_size):
-        blocks.append([])
+def run_constraining(variables, domains, size):
+    csp = CSP(variables, domains, size)
+    constraining = csp.backtracking({}, "most_constraining")
+    csp.print_output(constraining)
 
-    for i, char in enumerate(grid_string):
-        blocks[ord(char) - ord('A')].append(i + 1)
-    return blocks, grid_size
+def run_hybrid(variables, domains, size):
+    csp = CSP(variables, domains, size)
+    hybrid = csp.backtracking({}, "hybrid")
+    csp.print_output(hybrid)
 
-if __name__ == '__main__':
-    solve = Process(target=solve_csp)
+def solve_csp(variables, domains, size):
+    solve = Process(target=run_constrained, args=(variables, domains, size))
     # Start the process
     solve.start()
+    print("\nHeuristic 1: Most Constrained")
     start_time = time.time()
-    # time out after 10 min (600 seconds)
-    solve.join(timeout=600)
-    print("--- %s seconds ---" % (time.time() - start_time))
+    solve.join(timeout=600) # time out after 10 min (600 seconds)
+    print("Time taken: %s seconds" % (time.time() - start_time))
+    solve.terminate()
+    if (time.time() - start_time) >= 599:
+        print("TIMED OUT!!")
+
+    solve = Process(target=run_constraining, args=(variables, domains, size))
+    # Start the process
+    solve.start()
+    print("\nHeuristic 2: Most Constraining")
+    start_time = time.time()
+    solve.join(timeout=600) # time out after 10 min (600 seconds)
+    print("Time taken: %s seconds"  % (time.time() - start_time))
+    if (time.time() - start_time) >= 599:
+        print("TIMED OUT!!")
 
     solve.terminate()
+
+    solve = Process(target=run_hybrid, args=(variables, domains, size))
+    # Start the process
+    solve.start()
+    print("\nHeuristic 3: Hybrid")
+    start_time = time.time()
+    solve.join(timeout=600) # time out after 10 min (600 seconds)
+    print("Time taken: %s seconds"  % (time.time() - start_time))
+    solve.terminate()
+    if (time.time() - start_time) >= 599:
+        print("TIMED OUT!!")
+
+
+def start():
+    print("BACKTRACKING:")
+    read_file(["input2"])
+
+
+if __name__ == '__main__':
+    start()
