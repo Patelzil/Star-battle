@@ -186,6 +186,10 @@ class CSP:
                     count = len(reduced_domains[key])
                     most_constrained = key
 
+        local_assignment = assignment.copy()
+        local_assignment[most_constrained] = self.domains[most_constrained][0]
+        reduced_domains = self.reduce_domains(local_assignment)
+
         return most_constrained, reduced_domains
 
     def total_length(self, domains):
@@ -268,7 +272,6 @@ class CSP:
             return most_constraining, list_of_reduced_domains
         else:
             local_assignment[most_constraining] = self.domains[most_constraining][0]
-
         list_of_reduced_domains = self.reduce_domains(local_assignment)
 
         return most_constraining, list_of_reduced_domains
@@ -294,10 +297,48 @@ class CSP:
         return hybrid, list_of_reduced_domains
 
     def hybrid(self, assignment):
-        most_constraining, reduced_domains = self.most_constraining(assignment)
-        hybrid, hybrid_domains = self.most_constrained_hybrid(assignment, reduced_domains)
+        hybrid_var = -1
+        max_count = -1
 
-        return hybrid, hybrid_domains
+        list_of_lengths = {}
+
+        local_domains = self.reduce_domains(assignment)
+        list_of_neighbours = {}
+        for variable in self.variables:
+            if variable not in assignment:
+                local_var = variable
+                if len(local_domains[local_var]) != 0:
+                    first_val = local_domains[local_var][0]
+
+                    list_of_neighbours[variable] = self.get_neighbours(first_val)
+
+        count = 0
+        for variable in list_of_neighbours:
+            for value in list_of_neighbours[variable]:
+                for var in self.variables:
+                    if var not in assignment and var != variable:
+                        if value in self.domains[var]:
+                            count += 1
+
+            list_of_lengths[variable] = count
+
+        most_constrained_length = 2147483647
+        for key in list_of_lengths:
+            if list_of_lengths[key] > max_count and len(local_domains[key]) < most_constrained_length:
+                hybrid_var = key
+                max_count = list_of_lengths[key]
+                most_constrained_length = len(local_domains[key])
+
+        list_of_reduced_domains = {}
+        local_assignment = assignment.copy()
+        if hybrid_var == -1:
+            return hybrid_var, list_of_reduced_domains
+        else:
+            local_assignment[hybrid_var] = self.domains[hybrid_var][0]
+        list_of_reduced_domains = self.reduce_domains(local_assignment)
+
+        return hybrid_var, list_of_reduced_domains
+
 
     def backtracking(self, assignment, heuristic):
         # print(assignment)
@@ -373,7 +414,7 @@ def read_file():
 def solve_csp():
     variables, domains, size = read_file()
     csp = CSP(variables, domains, size)
-    resyi = csp.backtracking({}, "hybrid")
+    resyi = csp.backtracking({}, "most_constraining")
     csp.print_output(resyi)
 
 

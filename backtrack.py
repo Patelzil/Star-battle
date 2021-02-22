@@ -273,7 +273,48 @@ class CSP:
 
 
     def hybrid(self, assignment):
-        pass
+        hybrid_var = -1
+        max_count = -1
+
+        list_of_lengths = {}
+
+        local_domains = self.reduce_domains(assignment)
+        list_of_neighbours = {}
+        for variable in self.variables:
+            if variable not in assignment:
+                local_var = variable
+                if len(local_domains[local_var]) != 0:
+                    first_val = local_domains[local_var][0]
+
+                    list_of_neighbours[variable] = self.get_neighbours(first_val)
+
+        count = 0
+        for variable in list_of_neighbours:
+            for value in list_of_neighbours[variable]:
+                for var in self.variables:
+                    if var not in assignment and var != variable:
+                        if value in self.domains[var]:
+                            count += 1
+
+            list_of_lengths[variable] = count
+
+        most_constrained_length = 2147483647
+        for key in list_of_lengths:
+            if list_of_lengths[key] > max_count and len(local_domains[key]) < most_constrained_length:
+                hybrid_var = key
+                max_count = list_of_lengths[key]
+                most_constrained_length = len(local_domains[key])
+
+        list_of_reduced_domains = {}
+        local_assignment = assignment.copy()
+        if hybrid_var == -1:
+            return hybrid_var
+        else:
+            local_assignment[hybrid_var] = self.domains[hybrid_var][0]
+        list_of_reduced_domains = self.reduce_domains(local_assignment)
+
+        return hybrid_var
+
 
     def backtracking(self, assignment, heuristic):
         # print(assignment)
