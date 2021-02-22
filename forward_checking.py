@@ -186,6 +186,10 @@ class CSP:
                     count = len(reduced_domains[key])
                     most_constrained = key
 
+        local_assignment = assignment.copy()
+        local_assignment[most_constrained] = self.domains[most_constrained][0]
+        reduced_domains = self.reduce_domains(local_assignment)
+
         return most_constrained, reduced_domains
 
     def total_length(self, domains):
@@ -197,13 +201,13 @@ class CSP:
     def get_neighbours(self, value):
         neighbours = [value]
 
-        #right
+        # right
         if (value + 1) % self.size != 1:
-            neighbours.append(value+1)
+            neighbours.append(value + 1)
 
         # check and remove left
         if (value - 1) % self.size != 0:
-            neighbours.append(value-1)
+            neighbours.append(value - 1)
 
         # check and remove down
         if (value + self.size) <= self.size * self.size:
@@ -247,15 +251,6 @@ class CSP:
 
                     list_of_neighbours[variable] = self.get_neighbours(first_val)
 
-        # count = 0
-        # for value in list_of_neighbours:
-        #     for var in self.variables:
-        #         if var not in assignment and var != local_var:
-        #             if value in self.domains[var]:
-        #                 count += 1
-        #
-        # list_of_lengths[local_var] = count
-
         count = 0
         for variable in list_of_neighbours:
             for value in list_of_neighbours[variable]:
@@ -265,110 +260,6 @@ class CSP:
                             count += 1
 
             list_of_lengths[variable] = count
-
-
-
-                # for value in local_domains[variable]:
-                #     if self.consistent(value, assignment):
-                #         local_assignment = assignment.copy()
-                #         local_assignment[variable] = value
-                #         # for every variable not in assigment. Take each assigned value and remove value from domain\
-                #         reduced_domains = copy.deepcopy(local_domains)
-                #
-                #         for var in self.variables:
-                #             if var is not local_assignment:
-                #                 for conflict_value in reduced_domains[var]:
-                #                     if conflict_value == value:
-                #                         reduced_domains[var].remove(conflict_value)
-                #                     #right
-                #                     if ((value + 1) % self.size != 1) and conflict_value == (value + 1):
-                #                         reduced_domains[var].remove(conflict_value)
-                #
-                #                     # check and remove left
-                #                     if ((value - 1) % self.size != 0) and conflict_value == (value - 1):
-                #                         reduced_domains[var].remove(conflict_value)
-                #
-                #                     # check and remove down
-                #                     if ((value + self.size) <= self.size * self.size) and conflict_value == (value + self.size):
-                #                         reduced_domains[var].remove(conflict_value)
-                #
-                #                     # check and remove top
-                #                     if ((value - self.size) > 0) and conflict_value == (value - self.size):
-                #                         reduced_domains[var].remove(conflict_value)
-                #
-                #                     # check and remove top left
-                #                     if ((value - self.size - 1) % self.size != 0) and conflict_value == (value - self.size - 1):
-                #                         reduced_domains[var].remove(conflict_value)
-                #
-                #                     # check and remove top right
-                #                     if ((value - self.size + 1) % self.size != 1) and conflict_value == (value - self.size + 1):
-                #                         reduced_domains[var].remove(conflict_value)
-                #                     # check and remove bottom left
-                #                     if ((value + self.size - 1) % self.size != 0) and conflict_value == (value + self.size - 1):
-                #                         reduced_domains[var].remove(conflict_value)
-                #                     # check and remove bottom right
-                #                     if ((value + self.size + 1) % self.size != 1) and conflict_value == (value + self.size + 1):
-                #                         reduced_domains[var].remove(conflict_value)
-                #
-                #
-                #         # remove rows
-                #         for var in self.variables:
-                #             if var not in local_assignment:
-                #                 for conflict_value in reduced_domains[var]: # value 2
-                #                     count_row = 0
-                #                     for key in local_assignment:
-                #                         assigned_value = local_assignment[key]  # variable
-                #                         if ((assigned_value - 1) // self.size) == ((conflict_value - 1) // self.size):
-                #                             count_row += 1
-                #                         if count_row == 2 and conflict_value in reduced_domains[var]:
-                #                             reduced_domains[var].remove(conflict_value)
-                #         # remove columns
-                #         for var in self.variables:
-                #             if var not in local_assignment:
-                #                 for conflict_value in reduced_domains[var]:
-                #                     count_column = 0
-                #                     for key in local_assignment:
-                #                         assigned_value = local_assignment[key]  # variable
-                #                         if (assigned_value % self.size) == (conflict_value % self.size):
-                #                             count_column += 1
-                #                         if count_column == 2 and conflict_value in reduced_domains[var]:
-                #                             reduced_domains[var].remove(conflict_value)
-                #
-                #         list_of_lengths[variable] = self.total_length(reduced_domains)
-                #         list_of_reduced_domains[variable] = reduced_domains
-                #     else:
-                #         local_domains[variable].remove(value)
-                #         break
-
-        # index = 0
-        #
-        # invalid_var = {}
-        # variable_left = 0
-        # for var in self.variables:
-        #     if var not in assignment:
-        #         variable_left += 1
-
-        # # Check all unassigned variables.
-        # while (len(list_of_lengths) == 0) and (variable_left != 0):
-        #     for var in self.variables:
-        #         if var not in assignment and var not in invalid_var:
-        #             # copy the assignment
-        #             local_assignment = assignment.copy()
-        #             # take first available value from variable's reduced domain
-        #             if index < len(self.domains[var]):
-        #                 value = self.domains[var][index]
-        #             else:
-        #                 invalid_var[var] = var
-        #                 variable_left-=1
-        #             # assign the value to the local assignment
-        #             if self.consistent(value, local_assignment):
-        #                 local_assignment[var] = value
-        #
-        #                 # reduce the domains.
-        #                 reduced_local_domains = self.reduce_domains(local_assignment)
-        #                 list_of_lengths[var] = self.total_length(reduced_local_domains)
-        #                 list_of_reduced_domains[var] = reduced_local_domains
-        #     index += 1
 
         for key in list_of_lengths:
             if list_of_lengths[key] > max_count:
@@ -381,16 +272,76 @@ class CSP:
             return most_constraining, list_of_reduced_domains
         else:
             local_assignment[most_constraining] = self.domains[most_constraining][0]
-
         list_of_reduced_domains = self.reduce_domains(local_assignment)
 
         return most_constraining, list_of_reduced_domains
 
+    def most_constrained_hybrid(self, assignment, reduced_domains):
+        hybrid = -1
+        count = 2147483647
+        for key in reduced_domains:
+            if key not in assignment:
+                if len(reduced_domains[key]) < count:
+                    count = len(reduced_domains[key])
+                    hybrid = key
+
+        local_assignment = assignment.copy()
+        list_of_reduced_domains = {}
+        if hybrid == -1:
+            return hybrid, list_of_reduced_domains
+        else:
+            local_assignment[hybrid] = self.domains[hybrid][0]
+
+        list_of_reduced_domains = self.reduce_domains(local_assignment)
+
+        return hybrid, list_of_reduced_domains
+
     def hybrid(self, assignment):
-        pass
+        hybrid_var = -1
+        max_count = -1
+
+        list_of_lengths = {}
+
+        local_domains = self.reduce_domains(assignment)
+        list_of_neighbours = {}
+        for variable in self.variables:
+            if variable not in assignment:
+                local_var = variable
+                if len(local_domains[local_var]) != 0:
+                    first_val = local_domains[local_var][0]
+
+                    list_of_neighbours[variable] = self.get_neighbours(first_val)
+
+        count = 0
+        for variable in list_of_neighbours:
+            for value in list_of_neighbours[variable]:
+                for var in self.variables:
+                    if var not in assignment and var != variable:
+                        if value in self.domains[var]:
+                            count += 1
+
+            list_of_lengths[variable] = count
+
+        most_constrained_length = 2147483647
+        for key in list_of_lengths:
+            if list_of_lengths[key] > max_count and len(local_domains[key]) < most_constrained_length:
+                hybrid_var = key
+                max_count = list_of_lengths[key]
+                most_constrained_length = len(local_domains[key])
+
+        list_of_reduced_domains = {}
+        local_assignment = assignment.copy()
+        if hybrid_var == -1:
+            return hybrid_var, list_of_reduced_domains
+        else:
+            local_assignment[hybrid_var] = self.domains[hybrid_var][0]
+        list_of_reduced_domains = self.reduce_domains(local_assignment)
+
+        return hybrid_var, list_of_reduced_domains
+
 
     def backtracking(self, assignment, heuristic):
-        print(assignment)
+        # print(assignment)
         # base case
         if len(assignment) == len(self.variables):
             return assignment
